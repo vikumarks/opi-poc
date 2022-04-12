@@ -1,26 +1,20 @@
 # OPI Project PoC
 
-Proof of Concept
+This repo hosts OPI proofs of concept.  These PoCs are used to demonstrate that
+the OPI project can work for some set of use cases.
 
-The Proof of Concept is made up of three types of containers: traffic sources, traffic targets, and proxies.  The initial PoC will be:
-- Servers hosting traffic sources sending traffic to
-- Servers with IPU or DPU cards, with traffic targets on the servers
-- Proxies running on IPU or DPU cards
+## High level requirements
 
-The source, target and proxies are all containers so then can all run on a laptop.
+A PoC should demonstrate some aspect or aspects of OPI, for example a networking
+PoC could demonstrate some networking application using OPI APIs, provisioning,
+and lifecycle management.
 
-# Healthy traffic generation
-Evaluate using iperf first
+In most cases, the PoC should
+* be implemented by some set of containers
+* include tests
+* run on a variety of hardware configurations including virtual and multiple
+  vendors' devices
 
-# Malicious traffic generation
-Since we're using OWASP CRS (see below), we will first evaluate [Zed Attack Proxy](https://github.com/zaproxy/zaproxy).
+## Current PoCs
 
-# The proxy
-The proxy will be open source NGINX with the [SpiderLabs Modsecurity](https://github.com/SpiderLabs/ModSecurity-nginx) module running with the open source  [OWASP Core Rule Set (CRS)](https://github.com/coreruleset/coreruleset).
-
-# The target
-No specific target has been chosen, the plan was to evaluate members of [this list](https://ultimateqa.com/dummy-automation-websites/).  Entries under consideration will be open source and fully runnable locally, and relatively simple to containerize if needed.
-
-# Containers
-Each of the above will be running in a container.  The long term plan is to have multiple types of each container, so more than one way to generate healthy traffic, many types of malicious traffic, multiple sites to automate against, etc.
-
+* [Pure software firewall](sw_firewall/README.md)
