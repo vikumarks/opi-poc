@@ -1,3 +1,5 @@
+[![OPI PoC CI](https://github.com/opiproject/opi-poc/actions/workflows/poc.yml/badge.svg)](https://github.com/opiproject/opi-poc/actions/workflows/poc.yml)
+
 # OPI Project PoC
 
 This repo hosts OPI proofs of concept.  These PoCs are used to demonstrate that
