@@ -19,4 +19,4 @@ In most cases, the PoC should
 
 ## Current PoCs
 
-* [Pure software firewall](sw_firewall/README.md)
+* [Pure software networking](networking/README.md)
