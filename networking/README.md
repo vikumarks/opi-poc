@@ -1,4 +1,4 @@
-# Software Firewall PoC
+# Pure Software Networking PoC
 
 The Proof of Concept is made up of three types of containers:
 
