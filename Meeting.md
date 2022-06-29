@@ -251,3 +251,32 @@ Attendees: Steven Royer, Venkat Pullela, Kyle Mestery, Shafiq Abedin
      [networking](https://github.com/opiproject/opi-poc/tree/main/networking)
      PoC?
 * Can still layer Tim's nginx firewall on top of existing PoC
+
+## 6/15/2002:
+Attendees: Yuval Caduri, Venkat Pullela, Tim Worsley, Dan Daly, Steven Royer
+
+* Refresh and welcome to Yuval!
+* Dan brought up concerns that it's too early to invest much in PoC before the
+  other subgroups have produced much
+  * General agreements, but there is still value in laying the framework.
+* Firewall PoC
+  * Tim to update existing networking PoC to include his firewall bits
+
+## 6/29/2002:
+Attendees: Steven Royer, Dan Daly, Kyle Mestery, Tim Worsley, Anh Thu, Venkat
+Pullela
+
+* Talk about OS again
+  * Device OS development can occur on any OS, but there needs to be a
+    "supported" option, e.g. Red Hat
+  * Hope is that applications can be developed in containers with base image of
+    their choice.  TBD on how libraries/APIs work across specific base image and
+    device OS types.
+* New organization discussion
+  * Brief discussion follow-on to main meeting topic related to expanding the
+    role of this group to include hosting vendor code.  TBD
+* Firewall
+  * Tim to replace nginx in existing PoC
+* Dan: Testing discussion
+  * To post slides around CI/CD: slack and github
+  * Venkat to bring Keysight people to talk about test pipeline
