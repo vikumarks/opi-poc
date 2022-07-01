@@ -5,16 +5,15 @@ on:
     branches: [ main ]
     paths-ignore:
       - 'storage/**'
-      - 'github/dependabot.yml'
-      - '.github/workflows/poc-networking.yml'
-      - '.github/workflows/poc-networking-poc.yml'
+      - '.github/workflows/poc-storage.yml'
+      - '.github/workflows/poc-storage-poc.yml'
   pull_request:
     branches: [ main ]
     paths-ignore:
       - 'storage/**'
       - 'github/dependabot.yml'
-      - '.github/workflows/poc-networking.yml'
-      - '.github/workflows/poc-networking-poc.yml'
+      - '.github/workflows/poc-storage.yml'
+      - '.github/workflows/poc-storage-poc.yml'
 
 concurrency:
   # if workflow for PR or push is already running stop it, and start new one
