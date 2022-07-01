@@ -1,6 +1,7 @@
 # OPI Project PoC
 
 [![OPI PoC CI](https://github.com/opiproject/opi-poc/actions/workflows/poc.yml/badge.svg)](https://github.com/opiproject/opi-poc/actions/workflows/poc.yml)
+[![MarkdownLint](https://github.com/opiproject/opi-poc/actions/workflows/markdown.yml/badge.svg)](https://github.com/opiproject/opi-poc/actions/workflows/markdown.yml)
 
 This repo hosts OPI proofs of concept.  These PoCs are used to demonstrate that
 the OPI project can work for some set of use cases.
