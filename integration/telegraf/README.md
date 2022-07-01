@@ -22,6 +22,7 @@ Run `docker-compose -f docker-compose.telegraf.yml up`
 
 ## Example
 
+<!-- markdownlint-disable -->
 ```text
 $ docker run --rm --net=host -v $(pwd)/telegraf-spdk.conf:/etc/telegraf/telegraf.conf:ro telegraf:1.22
 2022-03-29T18:47:11Z I! Using config file: /etc/telegraf/telegraf.conf
@@ -45,3 +46,4 @@ cpu,cpu=cpu5,host=52ee5c75df01 usage_nice=0,usage_iowait=0,usage_irq=0.299700299
 
 ...
 ```
+<!-- markdownlint-restore -->
