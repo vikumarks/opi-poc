@@ -1,0 +1,34 @@
+name: 'OPI Storage PoC CI'
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'storage/**'
+      - 'github/dependabot.yml'
+      - '.github/workflows/poc-networking.yml'
+      - '.github/workflows/poc-networking-poc.yml'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - 'storage/**'
+      - 'github/dependabot.yml'
+      - '.github/workflows/poc-networking.yml'
+      - '.github/workflows/poc-networking-poc.yml'
+
+concurrency:
+  # if workflow for PR or push is already running stop it, and start new one
+  group: makefile-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - run: 'echo "No storage shellcheck test run required"'
+
+  run_storage_poc:
+    needs: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - run: 'echo "No storage POC test run required"'

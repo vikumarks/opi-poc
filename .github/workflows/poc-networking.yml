@@ -1,11 +1,19 @@
 ---
-name: OPI PoC CI
+name: 'OPI Networking PoC CI'
 
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'networking/**'
+      - '.github/workflows/poc-networking.yml'
+      - '.github/workflows/poc-networking-poc.yml'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'networking/**'
+      - '.github/workflows/poc-networking.yml'
+      - '.github/workflows/poc-networking-poc.yml'
 
 concurrency:
   # if workflow for PR or push is already running stop it, and start new one
@@ -23,11 +31,7 @@ jobs:
       run: |
         make -C networking shellcheck
 
-    - name: storage shellcheck
-      run: |
-        make -C storage shellcheck
-
-  run_poc:
+  run_networking_poc:
     needs: shellcheck
     runs-on: ubuntu-latest
     steps:
@@ -64,7 +68,3 @@ jobs:
     - name: Run Networking PoC
       run: |
         cd networking && ./scripts/poc.sh start
-
-    - name: Run Storage PoC
-      run: docker-compose -f "docker-compose.yml" up --detach --build
-      working-directory: storage
