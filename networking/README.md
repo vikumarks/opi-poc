@@ -13,7 +13,7 @@ The initial PoC will be:
 - Server containers hosting traffic sources
 - Traffic target containers
 
-# Running the PoC
+## Running the PoC
 
 The OPI PoC uses IPDK with p4-ebpf for networking. You will want to install
 both [IPDK p4-ebpf](https://github.com/ipdk-io/ipdk/tree/main/build/networking_ebpf)
@@ -32,17 +32,17 @@ install the ipdk-plugin to manage docker networks.
 
 Next, start both ipdk and ipdk-plugin:
 
-```
-$ ipdk start -d --link-namespace --ulimit
-$ sudo ~/go/src//ipdk-plugin &
+```console
+ipdk start -d --link-namespace --ulimit
+sudo ~/go/src//ipdk-plugin &
 ```
 
-## Running the PoC
+## Starting the PoC
 
 You can now run the demo setup as follows:
 
-```
-$ docker compose up -d
+```console
+docker compose up -d
 ```
 
 ## Verify the PoC
@@ -51,7 +51,8 @@ The next step is to verify you have connectivity across the containers via the
 networks IPDK p4-ebpf is providing. The following shows an example of pinging
 from clients to the nginx container:
 
-```
+<!-- markdownlint-disable -->
+```console
 $ docker exec -it client1 ping -c 3 192.168.55.2
 PING 192.168.55.2 (192.168.55.2): 56 data bytes
 64 bytes from 192.168.55.2: seq=0 ttl=63 time=0.094 ms
@@ -72,3 +73,4 @@ PING 192.168.65.2 (192.168.65.2): 56 data bytes
 round-trip min/avg/max = 0.075/0.091/0.103 ms
 $
 ```
+<!-- markdownlint-restore -->

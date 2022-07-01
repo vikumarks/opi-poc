@@ -2,6 +2,7 @@
 
 Runs redfish server, example:
 
+<!-- markdownlint-disable -->
 ```text
 $ curl --fail http://127.0.0.1:8001/redfish/v1                                                                                                             {
     "@odata.id": "/redfish/v1/",
@@ -48,3 +49,4 @@ $ curl --fail http://127.0.0.1:8001/redfish/v1                                  
     }
 }
 ```
+<!-- markdownlint-restore -->

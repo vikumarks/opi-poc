@@ -1,4 +1,4 @@
-= PXE
+# PXE
 
 This a DHCP, TFTP and HTTP servers
 
@@ -18,11 +18,11 @@ Environment variables:
 Run Example:
 
 ```text
-$ docker-compose -f docker-compose.pxe.yml up --build
+docker-compose -f docker-compose.pxe.yml up --build
 ```
 
 Test:
 
 ```text
-$ sudo nmap --script broadcast-dhcp-discover
+sudo nmap --script broadcast-dhcp-discover
 ```
