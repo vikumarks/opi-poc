@@ -1,0 +1,47 @@
+---
+name: 'OPI Storage PoC CI'
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'storage/**'
+      - '.github/workflows/poc-storage.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'storage/**'
+      - '.github/workflows/poc-storage.yml'
+
+concurrency:
+  # if workflow for PR or push is already running stop it, and start new one
+  group: poc-storage-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  storage-shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: storage shellcheck
+      run: |
+        make -C storage shellcheck
+
+  run_storage_poc:
+    needs: storage-shellcheck
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Run Storage PoC
+      run: docker-compose -f "docker-compose.yml" up --detach --build
+      working-directory: storage

@@ -1,0 +1,30 @@
+name: 'OPI Networking PoC CI'
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - 'networking/**'
+      - '.github/workflows/poc-networking.yml'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - 'networking/**'
+      - '.github/workflows/poc-networking.yml'
+
+concurrency:
+  # if workflow for PR or push is already running stop it, and start new one
+  group: poc-networking-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  networking-shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - run: 'echo "No networking shellcheck test run required"'
+
+  run_networking_poc:
+    needs: networking-shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - run: 'echo "No networking POC test run required"'
