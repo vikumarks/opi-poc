@@ -32,6 +32,7 @@ jobs:
         make -C storage shellcheck
 
   run_storage_poc:
+    needs: storage-shellcheck
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository

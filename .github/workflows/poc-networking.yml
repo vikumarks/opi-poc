@@ -32,7 +32,7 @@ jobs:
         make -C networking shellcheck
 
   run_networking_poc:
-    needs: shellcheck
+    needs: networking-shellcheck
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
