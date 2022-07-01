@@ -14,7 +14,7 @@ on:
 
 concurrency:
   # if workflow for PR or push is already running stop it, and start new one
-  group: poc-storage-${{ github.ref }}
+  group: poc-storage-skip-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
