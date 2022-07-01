@@ -6,7 +6,7 @@ The Proof of Concept is made up of three types of containers:
 - traffic targets
 - proxies
 
-The initial PoC will be:
+The initial networking PoC will be:
 
 - IPDK P4-eBPF container for networking
 - Docker-based container setup using Docker Compose
