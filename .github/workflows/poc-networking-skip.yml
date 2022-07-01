@@ -16,7 +16,7 @@ on:
 
 concurrency:
   # if workflow for PR or push is already running stop it, and start new one
-  group: makefile-ci-${{ github.ref }}
+  group: poc-networking-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
