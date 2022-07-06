@@ -13,7 +13,8 @@ services:
       - "9009:9009"
     privileged: true
     networks:
-      - opi
+      opi:
+        ipv4_address: 10.127.127.4
     command: |
       sh -c 'echo 2048 > /proc/sys/vm/nr_hugepages && \
             /root/spdk/build/bin/spdk_tgt -m 0xff -s 1024 & \
