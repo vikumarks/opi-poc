@@ -32,6 +32,10 @@ start_containers() {
     bash -c "${DC} down"
     docker network prune --force
     bash -c "${DC} pull"
+    # Workaround for running on servers without AVX512
+    if [ -n "${BUILD_SPDK:-}" ]; then
+        bash -c "${DC} build spdk-target"
+    fi
     bash -c "${DC} up -d"
 }
 

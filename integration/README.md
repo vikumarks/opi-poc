@@ -42,11 +42,20 @@ This pulls the latest images and only builds those it cannot find.
 ```
 
 If you are making changes to the container images, you can `build` them before
-running `start`.
+running `start`.  **Note** This does not work for images pulled from a cr like
+the spdk-target image.
 
 ```bash
 ./scripts/integration.sh build
 ./scripts/integration.sh start
+```
+
+If you try to run on a platform that does not support every extended instruction
+that SPDK supports, the pulled spdk-target image will not function.  To work
+around this, set the `BUILD_SPDK` variable before starting:
+
+```bash
+BUILD_SPDK=1 ./scripts/integration.sh start
 ```
 
 ### Start - Red Hat
