@@ -82,7 +82,20 @@ run_integration_tests() {
     bash -c "${DC} exec -T xpu-spdk /usr/local/bin/identify    -r 'traddr:10.129.129.4 trtype:TCP adrfam:IPv4 trsvcid:4420'"
     bash -c "${DC} exec -T spdk-target /usr/local/bin/perf     -r 'traddr:10.129.129.4 trtype:TCP adrfam:IPv4 trsvcid:4420' -c 0x1 -q 1 -o 4096 -w randread -t 10"
     bash -c "${DC} exec -T xpu-spdk /usr/local/bin/perf         -r 'traddr:10.129.129.4 trtype:TCP adrfam:IPv4 trsvcid:4420' -c 0x1 -q 1 -o 4096 -w randread -t 10"
-    bash -c "${DC} up example-storage-client example-network-client"
+    NETWORK_CLIENT_NAME=$(${DC} ps | grep example-network-client | awk '{print $1}')
+    NETWORK_CLIENT_RC=$(docker inspect --format '{{.State.ExitCode}}' "${NETWORK_CLIENT_NAME}")
+    if [ "${NETWORK_CLIENT_RC}" != "0" ]; then
+        echo "example-network-client failed:"
+        docker logs "${NETWORK_CLIENT_NAME}"
+        exit 1
+    fi
+    STORAGE_CLIENT_NAME=$(${DC} ps | grep example-storage-client | awk '{print $1}')
+    STORAGE_CLIENT_RC=$(docker inspect --format '{{.State.ExitCode}}' "${STORAGE_CLIENT_NAME}")
+    if [ "${STORAGE_CLIENT_RC}" != "0" ]; then
+        echo "example-storage-client failed:"
+        docker logs "${STORAGE_CLIENT_NAME}"
+        exit 1
+    fi
     bash -c "${DC} exec -T strongswan swanctl --stats"
     bash -c "${DC} exec -T strongswan swanctl --list-sas"
 }
