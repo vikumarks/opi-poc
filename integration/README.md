@@ -21,7 +21,7 @@ docker-compose does work on Red Hat OSes starting with podman 3.x.
 For example:
 
 ```bash
-sudo dnf install -y podman podman-docker
+sudo dnf install -y podman podman-docker podman-plugins
 sudo systemctl enable podman.socket --now
 ```
 
