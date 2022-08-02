@@ -181,7 +181,12 @@ services:
       context: gateway
       dockerfile: Dockerfile.network
     network_mode: host
-    command: ['python', 'route_guide_client.py']
+    command: |
+        sh -x -c 'for i in `seq 1 5`; \
+            do \
+                sleep 1; \
+                python route_guide_client.py && break; \
+            done'
   example-storage-client:
     depends_on:
       - gateway
@@ -191,7 +196,12 @@ services:
       context: gateway
       dockerfile: Dockerfile.storage
     network_mode: host
-    command: ['go', 'run', './greeter_client/main.go']
+    command: |
+        sh -x -c 'for i in `seq 1 5`; \
+            do \
+                sleep 1; \
+                go run ./greeter_client/main.go && break; \
+            done'
 
 networks:
   xpu-cpu:
