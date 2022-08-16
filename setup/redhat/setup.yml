@@ -1,0 +1,20 @@
+---
+- name: Set up Red Hat based OS for development
+  hosts: all
+  become: yes
+  tasks:
+  - name: Install package dependencies
+    dnf:
+      name: podman>=4,podman-docker,podman-plugins,sshpass,git
+      state: present
+
+  # docker-compose >=2 does not work with podman currently
+  - name: Install docker-compose
+    pip:
+      name: docker-compose>=1.29,<2
+      state: present
+
+  - name: Enable podman socket for docker-compose
+    systemd:
+      name: podman.socket
+      state: started
