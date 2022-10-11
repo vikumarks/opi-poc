@@ -1,23 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Red Hat
 ---
-- name: Set up Red Hat based OS for development
+- name: Set up for OPI PoC development
   hosts: all
   become: yes
   tasks:
-  - name: Install package dependencies
-    dnf:
-      name: podman,podman-docker,podman-plugins,sshpass,git
-      state: present
+  - include: debian.yml
+    when: ansible_os_family == 'Debian'
 
-  # docker-compose >=2 does not work with podman currently
-  - name: Install docker-compose
-    pip:
-      name: docker-compose>=1.29,<2
-      state: present
-
-  - name: Enable podman socket for docker-compose
-    systemd:
-      name: podman.socket
-      state: started
+  - include: redhat.yml
+    when: ansible_os_family == 'RedHat'
 
   # This is only needed for the first time to dynamically allocate huge pages
   # Subsequent boots do not need this configuration, so do not use sysctl here
