@@ -54,9 +54,9 @@ jobs:
       - uses: golangci/golangci-lint-action@v3
         with:
           working-directory: storage/client
-      - uses: golangci/golangci-lint-action@v3
-        with:
-          working-directory: security/server
-      - uses: golangci/golangci-lint-action@v3
-        with:
-          working-directory: security/client
+#      - uses: golangci/golangci-lint-action@v3
+#        with:
+#          working-directory: security/server
+#      - uses: golangci/golangci-lint-action@v3
+#        with:
+#          working-directory: security/client
