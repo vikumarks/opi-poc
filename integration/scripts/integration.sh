@@ -27,10 +27,6 @@ start_containers() {
     docker-compose down
     docker network prune --force
     docker-compose pull
-    # Workaround for running on servers without AVX512
-    if [ -n "${BUILD_SPDK:-}" ]; then
-        docker-compose build spdk-target
-    fi
     docker-compose up -d
 }
 
