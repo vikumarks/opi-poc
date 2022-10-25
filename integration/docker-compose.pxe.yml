@@ -28,7 +28,7 @@ services:
     command: --script broadcast-dhcp-discover
 
   web:
-    image: docker.io/library/python:3.10.8-slim
+    image: docker.io/library/python:3.11.0-slim
     ports:
       - 8082:8082
     networks:
