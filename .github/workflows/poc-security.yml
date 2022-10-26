@@ -108,11 +108,10 @@ jobs:
         "${grpc_cli[@]}" ls opi-security-server:50151 opi_api.security.v1.IPsec.IPsecListCerts -l
         "${grpc_cli[@]}" ls opi-security-server:50151 opi_api.security.v1.IPsec.IPsecLoadConn -l
         "${grpc_cli[@]}" ls opi-security-server:50151 opi_api.security.v1.IPsec.IPsecUnloadConn -l
-        docker-compose down
       working-directory: security
 
     - name: Logs
-      if: failure()
+      if: always()
       run: docker-compose logs
       working-directory: security
 
