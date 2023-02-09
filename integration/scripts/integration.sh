@@ -86,13 +86,28 @@ run_integration_tests() {
     curl --fail http://127.0.0.1:9091/api/v1/query?query=net_bytes_recv | grep net_bytes_recv
     curl --fail http://127.0.0.1:9091/api/v1/query?query=redfish_thermal_fans_reading_rpm | grep redfish_thermal_fans_reading_rpm
 
+    # TODO Workaround for agent getting connection refused from the redirecter
     SZTP_AGENT_NAME=$(docker-compose ps | grep agent | awk '{print $1}')
-    SZTP_AGENT_RC=$(docker wait "${SZTP_AGENT_NAME}")
-    if [ "${SZTP_AGENT_RC}" != "0" ]; then
-        echo "${SZTP_AGENT_NAME} failed:"
-        docker logs "${SZTP_AGENT_NAME}"
-        exit 1
-    fi
+    for i in {1..2}; do
+        SZTP_AGENT_RC=$(docker wait "${SZTP_AGENT_NAME}")
+        if [ "${SZTP_AGENT_RC}" != "0" ]; then
+            set +e +o pipefail
+            docker-compose logs agent | grep -q 'connection refused'
+            CONN_REFUSED=$?
+            set -e -o pipefail
+            if [ "$i" == "1" ] && [ "$CONN_REFUSED" == "0" ]; then
+                # Do exactly one retry for connection refused errors
+                echo "${SZTP_AGENT_NAME} got connection refused error, retry"
+                docker-compose up -d agent
+                continue
+            fi
+            echo "${SZTP_AGENT_NAME} failed:"
+            docker logs "${SZTP_AGENT_NAME}"
+            exit 1
+        else
+            break
+        fi
+    done
 
     NETWORK_CLIENT_NAME=$(docker-compose ps | grep example-network-client | awk '{print $1}')
     NETWORK_CLIENT_RC=$(docker inspect --format '{{.State.ExitCode}}' "${NETWORK_CLIENT_NAME}")
