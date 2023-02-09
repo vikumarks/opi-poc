@@ -47,13 +47,13 @@ secrets {
 - start OPI server
 
 ```Shell
-docker pull ghcr.io/opiproject/opi-security-server:main
+docker pull ghcr.io/opiproject/opi-strongswan-bridge:main
 
 sudo sed -i "s/# socket = unix:\/\/\${piddir}\/charon\.vici/socket = unix:\/\/\/var\/run\/charon\.vici/g" /etc/strongswan.d/charon/vici.conf
 
 docker run --rm --network host \
     --mount src=/var/run,target=/var/run,type=bind \
-    -d ghcr.io/opiproject/opi-security-server:main /opi-vici-bridge -port=50151
+    -d ghcr.io/opiproject/opi-strongswan-bridge:main /opi-vici-bridge -port=50151
 ```
 
 - to debug or see what is happening open 2 ssh connections to the DPU
@@ -62,7 +62,7 @@ docker run --rm --network host \
 # in SSH1, instead of -d use -it flag when starting the container
 docker run --rm --network host \
     --mount src=/var/run,target=/var/run,type=bind \
-    -it ghcr.io/opiproject/opi-security-server:main /opi-vici-bridge -port=50151
+    -it ghcr.io/opiproject/opi-strongswan-bridge:main /opi-vici-bridge -port=50151
 
 # in SSH2, it will show how ipsec tunnels are initiated and terminated
 swanctl --log
