@@ -46,6 +46,8 @@ secrets {
 
 - start OPI server
 
+see <https://hub.docker.com/r/opiproject/opi-strongswan-bridge>
+
 ```Shell
 docker pull ghcr.io/opiproject/opi-strongswan-bridge:main
 
