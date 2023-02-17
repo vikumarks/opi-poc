@@ -74,6 +74,8 @@ swanctl --log
 
 - run the OPI client application done for ipsec demo
 
+see <https://github.com/opiproject/pydpu> and <https://github.com/opiproject/godpu>
+
 ```Shell
 # add python api lib to path
 git clone https://github.com/opiproject/opi-api.git
