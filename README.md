@@ -2,6 +2,8 @@
 
 [![Integration](https://github.com/opiproject/opi-poc/actions/workflows/poc-integration.yml/badge.svg)](https://github.com/opiproject/opi-poc/actions/workflows/poc-integration.yml)
 [![Linters](https://github.com/opiproject/opi-poc/actions/workflows/linters.yml/badge.svg)](https://github.com/opiproject/opi-poc/actions/workflows/linters.yml)
+[![GitHub stars](https://img.shields.io/github/stars/opiproject/opi-poc.svg?style=flat-square&label=github%20stars)](https://github.com/opiproject/opi-poc)
+[![GitHub Contributors](https://img.shields.io/github/contributors/opiproject/opi-poc.svg?style=flat-square)](https://github.com/opiproject/opi-poc/graphs/contributors)
 
 This repo hosts OPI proofs of concept.  These PoCs are used to demonstrate that
 the OPI project can work for some set of use cases.  As a result, OPI CI is
