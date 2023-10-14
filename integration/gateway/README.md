@@ -9,6 +9,8 @@ And two example clients that send gRPC request via `nginx` gRPC API gataway to n
 
 ## Run
 
+:exclamation: `docker-compose` is deprecated. For details, see [Migrate to Compose V2](https://docs.docker.com/compose/migrate/).
+
 ```text
 docker-compose up --build example-storage-client example-network-client
 ```
