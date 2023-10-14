@@ -15,6 +15,8 @@ OTEL gateway collector runs outside of DPU/IPU and connects to backends like ELK
 
 ## Getting started
 
+:exclamation: `docker-compose` is deprecated. For details, see [Migrate to Compose V2](https://docs.docker.com/compose/migrate/).
+
 Run `docker-compose -f docker-compose.otel.yml up`
 
 ## Example
