@@ -3,22 +3,40 @@ import netmiko
 import pydpu
 import pytest
 import snappi
-from passwords import *
+
+
+import os
+
+# for name, value in os.environ.items():
+#     if name == 'TGEN1_PASS':
+#         print("{0}: {1}".format(name, '***********'))
+#     else:
+#         print("{0}: {1}".format(name, value))
+
+
+ROOT_PASSWORD = os.getenv('ROOT_PASSWORD')
+
+
+
+
 from testbed import *
+
+
+
 
 
 @pytest.fixture
 def dpu():
     dpu_info = {
         'device_type': 'linux',
-        'host': DPU_IP,
+        'host': BF2_IP,
         'username': 'root',
-        'password': DPU_PASSWORD
+        'password': ROOT_PASSWORD
     }
     dpu_connect = netmiko.ConnectHandler(**dpu_info)
     #prompt = dpu_connect.find_prompt()
-    dpu_connect.send_command('ip addr add 200.0.0.1/24 dev enp3s0f0s0')
-    dpu_connect.send_command('ip addr add 201.0.0.1/24 dev enp3s0f1s0')
+    dpu_connect.send_command('ip addr add 200.0.0.1/24 dev %s' % BF2_INTERFACES[0])
+    dpu_connect.send_command('ip addr add 201.0.0.1/24 dev %s' % BF2_INTERFACES[1])
     dpu_connect.send_command('ip addr add 202.0.0.1/24 dev pf0hpf')
     dpu_connect.send_command('ip addr add 203.0.0.1/24 dev pf1hpf')
     dpu_connect.send_command('sysctl net.ipv4.ip_forward=1')
@@ -39,8 +57,8 @@ def dpu():
 
     yield dpu_connect
 
-    dpu_connect.send_command('ip addr del 200.0.0.1/24 dev enp3s0f0s0')
-    dpu_connect.send_command('ip addr del 201.0.0.1/24 dev enp3s0f1s0')
+    dpu_connect.send_command('ip addr del 200.0.0.1/24 dev %s' % BF2_INTERFACES[0])
+    dpu_connect.send_command('ip addr del 201.0.0.1/24 dev %s' % BF2_INTERFACES[1])
     dpu_connect.send_command('ip addr del 202.0.0.1/24 dev pf0hpf')
     dpu_connect.send_command('ip addr del 203.0.0.1/24 dev pf1hpf')
     dpu_connect.send_command('ip neigh flush 200.0.0.0/8')
@@ -53,17 +71,17 @@ def dpu():
 def server():
     server_info = {
         'device_type': 'linux',
-        'host': SERVER_IP,
+        'host': TGEN1_IP,
         'username': 'root',
-        'password': SERVER_PASSWORD
+        'password': ROOT_PASSWORD
     }
     server_connect = netmiko.ConnectHandler(**server_info)
-    output = server_connect.send_command('docker compose -f /root/opi/tgen/deployment/tgen.yml up -d', read_timeout=30)
+    output = server_connect.send_command('docker compose -f /home/opi/actions-runner/_work/opi-poc/opi-poc/demos/tgen/deployment/tgen.yml up -d', read_timeout=30)
     print(output)
 
     yield server_connect
 
-    output = server_connect.send_command('docker compose -f /root/opi/tgen/deployment/tgen.yml down')
+    output = server_connect.send_command('docker compose -f /home/opi/actions-runner/_work/opi-poc/opi-poc/demos/tgen/deployment/tgen.yml down')
     print(output)
 
 
@@ -77,31 +95,34 @@ def host():
     # mlxconfig -d /dev/mst/mt41686_pciconf0.1 s INTERNAL_CPU_MODEL=0
     host_info = {
         'device_type': 'linux',
-        'host': HOST_IP,
+        'host': DH2_IP,
         'username': 'root',
-        'password': HOST_PASSWORD
+        'password': ROOT_PASSWORD
     }
     host_connect = netmiko.ConnectHandler(**host_info)
 
-    output = host_connect.send_command('docker compose -f /root/opi/tgen/deployment/tgen.yml up -d', read_timeout=30)
+    scp_conn = netmiko.SCPConn(host_connect)
+    scp_conn.scp_put_file('/home/opi/actions-runner/_work/opi-poc/opi-poc/demos/tgen/deployment/tgen.yml', '~/tgen.yaml')
+
+    output = host_connect.send_command('docker compose -f ~/tgen.yaml up -d', read_timeout=30)
     print(output)
 
     yield host_connect
 
-    output = host_connect.send_command('docker compose -f /root/opi/tgen/deployment/tgen.yml down')
+    output = host_connect.send_command('docker compose -f ~/tgen.yaml down')
     print(output)
 
 
 def test_server_to_server_via_dpu(dpu, server):
-    tgen = snappi.api(location=f'https://{SERVER_IP}', verify=False)
+    tgen = snappi.api(location=f'https://{TGEN1_IP}:8443', verify=False)
     cfg = tgen.config()
-    p1 = cfg.ports.port(name='server:p1', location=f'{SERVER_IP}:5555')[-1]
-    p2 = cfg.ports.port(name='server:p2', location=f'{SERVER_IP}:5556')[-1]
+    p1 = cfg.ports.port(name='server:p1', location=f'{TGEN1_IP}:5555')[-1]
+    p2 = cfg.ports.port(name='server:p2', location=f'{TGEN1_IP}:5556')[-1]
 
     # add layer 1 property to configure same speed on both ports
     ly = cfg.layer1.layer1(name='ly')[-1]
     ly.port_names = [p1.name, p2.name]
-    ly.speed = ly.SPEED_100_GBPS
+    ly.speed = ly.SPEED_10_GBPS
 
     # enable packet capture on both ports
     cp = cfg.captures.capture(name='cp')[-1]
@@ -126,9 +147,9 @@ def test_server_to_server_via_dpu(dpu, server):
     tgen.set_config(cfg)
 
     print('Starting transmit on all configured flows ...')
-    ts = tgen.transmit_state()
-    ts.state = ts.START
-    tgen.set_transmit_state(ts)
+    cs = tgen.control_state()
+    cs.traffic.flow_transmit.state = cs.traffic.flow_transmit.START
+    tgen.set_control_state(cs)
 
     #import pdb
     #pdb.set_trace()
@@ -139,15 +160,15 @@ def test_server_to_server_via_dpu(dpu, server):
 
 
 def test_server_to_dpuhost_via_dpu(dpu, server, host):
-    tgen = snappi.api(location=f'https://{SERVER_IP}', verify=False)
+    tgen = snappi.api(location=f'https://{TGEN1_IP}:8443', verify=False)
     cfg = tgen.config()
-    p1 = cfg.ports.port(name='host:p1', location=f'{HOST_IP}:5555')[-1]
-    p2 = cfg.ports.port(name='server:p1', location=f'{SERVER_IP}:5556')[-1]
+    p1 = cfg.ports.port(name='host:p1', location=f'{DH2_IP}:5555')[-1]
+    p2 = cfg.ports.port(name='server:p1', location=f'{TGEN1_IP}:5556')[-1]
 
     # add layer 1 property to configure same speed on both ports
     ly = cfg.layer1.layer1(name='ly')[-1]
     ly.port_names = [p1.name, p2.name]
-    ly.speed = ly.SPEED_1_GBPS
+    ly.speed = ly.SPEED_10_GBPS
 
     # enable packet capture on both ports
     cp = cfg.captures.capture(name='cp')[-1]
@@ -172,9 +193,9 @@ def test_server_to_dpuhost_via_dpu(dpu, server, host):
     tgen.set_config(cfg)
 
     print('Starting transmit on all configured flows ...')
-    ts = tgen.transmit_state()
-    ts.state = ts.START
-    tgen.set_transmit_state(ts)
+    cs = tgen.control_state()
+    cs.traffic.flow_transmit.state = cs.traffic.flow_transmit.START
+    tgen.set_control_state(cs)
 
     print('Checking metrics on all configured ports ...')
     print('Expected\tTotal Tx\tTotal Rx')
@@ -182,15 +203,15 @@ def test_server_to_dpuhost_via_dpu(dpu, server, host):
 
 
 def test_dpuhost_to_dpuhost_via_dpu(dpu, host):
-    tgen = snappi.api(location=f'https://{HOST_IP}', verify=False)
+    tgen = snappi.api(location=f'https://{DH2_IP}:8443', verify=False)
     cfg = tgen.config()
-    p1 = cfg.ports.port(name='host:p1', location=f'{HOST_IP}:5555')[-1]
-    p2 = cfg.ports.port(name='host:p2', location=f'{HOST_IP}:5556')[-1]
+    p1 = cfg.ports.port(name='host:p1', location=f'{DH2_IP}:5555')[-1]
+    p2 = cfg.ports.port(name='host:p2', location=f'{DH2_IP}:5556')[-1]
 
     # add layer 1 property to configure same speed on both ports
     ly = cfg.layer1.layer1(name='ly')[-1]
     ly.port_names = [p1.name, p2.name]
-    ly.speed = ly.SPEED_1_GBPS
+    ly.speed = ly.SPEED_10_GBPS
 
     # enable packet capture on both ports
     cp = cfg.captures.capture(name='cp')[-1]
@@ -215,9 +236,9 @@ def test_dpuhost_to_dpuhost_via_dpu(dpu, host):
     tgen.set_config(cfg)
 
     print('Starting transmit on all configured flows ...')
-    ts = tgen.transmit_state()
-    ts.state = ts.START
-    tgen.set_transmit_state(ts)
+    cs = tgen.control_state()
+    cs.traffic.flow_transmit.state = cs.traffic.flow_transmit.START
+    tgen.set_control_state(cs)
 
     print('Checking metrics on all configured ports ...')
     print('Expected\tTotal Tx\tTotal Rx')
@@ -230,7 +251,6 @@ def metrics_ok(api):
 
     req = api.metrics_request()
     req.port.port_names = [p.name for p in cfg.ports]
-    #import pdb;pdb.set_trace()
     # include only sent and received packet counts
     req.port.column_names = [req.port.FRAMES_TX, req.port.FRAMES_RX]
     # fetch port metrics
