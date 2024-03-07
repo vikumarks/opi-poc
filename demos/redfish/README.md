@@ -1,3 +1,3 @@
 # Redfish
 
-tbd
+see <https://github.com/opiproject/ansible-opi-dpu>
