@@ -5,6 +5,8 @@ jobs:
     runs-on: self-hosted
     steps:
         - uses: actions/checkout@v1
+        - name: pytest-run0
+          run: id
         - name: pytest-run1
           run: ls
         - name: pytest-run2
