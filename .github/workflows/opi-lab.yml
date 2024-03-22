@@ -22,4 +22,4 @@ jobs:
     runs-on: self-hosted
     steps:
         - name: nvidia bf-2 fw update using ansible
-          run: docker run --rm --pull=always ghcr.io/opiproject/ansible-opi-dpu:main 172.22.4.2 --module-name include_role --args name=bmc_fw_update -vvv -i "172.22.4.2," -e dpu_bmc_username='root' -e dpu_bmc_password='NvidiaBf2#Pass'
+          run: docker run --rm --pull=always ghcr.io/opiproject/ansible-opi-dpu:main 172.22.4.2 --module-name include_role --args name=bmc_fw_update -vvv -i "172.22.4.2," -e dpu_bmc_username='root' -e dpu_bmc_password='NvidiaBf2#Pass' -e bmc_fw_update_inventory_name='a5e46d02_running'
