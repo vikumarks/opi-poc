@@ -2,3 +2,4 @@
 
 - Nvidia
 - Marvell
+- Intel
