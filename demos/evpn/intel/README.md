@@ -10,19 +10,27 @@
 
 ### host (the server holding the DPU)
 
-- install Ubuntu 22.04 server
-- Intel setup info ???????
-- set Intel to make things easier, run below command from IMC
+- install Ubuntu 22.04 server or any other OS since host is not used
+- Intel setup info: install SDK 1.4+
+
+### IPU - IMC
+
+- bring links up, (not mandatory but got links up faster)
 
 ```Shell
 iset-cli set-phy-capabilities --port=1 --phy-type=100gbase_cr4
 iset-cli set-phy-capabilities --port=0 --phy-type=100gbase_cr4
 ```
 
-### dpu (Intel)
+### IPU - ACC
 
-- enable ip forwarding `sysctl net.ipv4.ip_forward=1`
-- iptables -P FORWARD ACCEPT
+- enable ip forwarding
+
+```Shell
+sysctl net.ipv4.ip_forward=1`
+iptables -P FORWARD ACCEPT
+```
+
 - set ip addresses and Vlan and other required configuration 
 
 ```Shell
@@ -60,6 +68,7 @@ ip link set enp0s1f0d2.20 master br20
 
 - install Docker (see [Docker manual](https://docs.docker.com/engine/install/ubuntu/) )
 - run required containers
+
 ```Shell
 docker run --privileged --rm --network host \
      --mount src=/work/opi-evpn-bridge-drop-0.5/conf/vinod.conf,target=/etc/frr/frr.conf,type=bind \
@@ -70,10 +79,10 @@ docker run --privileged --rm --network host \
      --cap-add=SYS_TIME \
      --cap-add=SYS_PTRACE \
      -it quay.io/frrouting/frr:9.1.0 bash  
-
 ```
 
 - Setup vtysh inside the FRR container
+
 ```Shell
 docker exec -it $FRRContainerID bash
 touch /etc/frr/vtysh.conf  
@@ -85,11 +94,15 @@ ifconfig lo0 2.2.2.2 netmask 255.255.255.255 up
 /usr/lib/frr/watchfrr -d -F traditional zebra bgpd staticd  
 sleep infinity
 ```
+
 - if watchfrr gives out of memory error
+  
 ```Shell
 echo 1 > /proc/sys/vm/overcommit_memory
 ```
-- Configuer vtysh config
+
+- load vtysh config
+
 ```Shell
 vtysh
 config t
