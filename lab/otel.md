@@ -8,7 +8,7 @@ Took from <https://github.com/opiproject/otel>
 
 ### Configuration
 
-Create `telegraf.conf` file, see example [here](./config/telegraf.conf)
+Create `telegraf.conf` file, see example [here](./telegraf.d/telegraf.conf.bf2)
 
 - change `outputs.opentelemetry` to the management server name/ip
 - change `192.168.240.1` to the internal DPU/IPU AMC/BMC for redfish collection
@@ -19,7 +19,7 @@ Create `telegraf.conf` file, see example [here](./config/telegraf.conf)
 Run telegraf container:
 
 ```bash
-sudo docker run -d --restart=always --network=host -v ./config/telegraf.conf:/etc/telegraf/telegraf.conf docker.io/library/telegraf:1.29
+sudo docker run -d --restart=always --network=host -v ./telegraf.d/telegraf.conf.bf2:/etc/telegraf/telegraf.conf docker.io/library/telegraf:1.29
 ```
 
 ### Optional Temperature
@@ -73,6 +73,12 @@ This will start those services:
 1. [OTEL Gateway Collector](https://opentelemetry.io/docs/collector/deployment/gateway/) to aggregate telemetry from all DPUs and IPUs.
 2. [Prometheus](https://prometheus.io/) Monitoring system & time series database
 3. [Grafana](https://grafana.com/) Open source analytics & monitoring solution for every database.
+
+### Otel Gateway Collector
+
+1. <http://172.22.0.1:13133> - health check
+2. <http://172.22.0.1:8888/metrics> - my own metrics
+3. <http://172.22.0.1:8889/metrics> - real metrics
 
 ### Prometheus
 

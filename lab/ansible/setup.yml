@@ -3,12 +3,21 @@
 ---
 
 - name:
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Sync all clocks
+      ansible.builtin.shell: "date -s '{{ now() }}'"
+
+- name:
   hosts: switches
   gather_facts: false
   tasks:
     - name: run show version on remote devices
       arista.eos.eos_command:
         commands: show version
+
+    # TODO: send lab/hardware/A100G/arista.config to the switch
 
 - name:
   hosts: hostbmcs
@@ -23,8 +32,25 @@
         password: "{{ ansible_password }}"
       register: result
 
-- name: Set up for OPI LAB environment
-  hosts: hostservers,DPUs,Management
+    - name: Debug print first firmware entry version
+      ansible.builtin.debug: var=result.redfish_facts.firmware.entries[0].Version
+
+    - name: Get BIOS attributes
+      community.general.redfish_info:
+        category: Systems
+        command: GetBiosAttributes
+        baseuri: "{{ ansible_host }}"
+        username: "{{ ansible_user | default(ansible_env.USER) }}"
+        password: "{{ ansible_password }}"
+      register: result
+
+    - name: Debug print bios serial number
+      ansible.builtin.debug: msg={{ result.redfish_facts.bios_attribute.entries[0][1].SerialNumber | default(result.redfish_facts.bios_attribute.entries[0][1].SystemServiceTag) }}
+
+    # TODO: configre BIOS to be always on ( see lab/hardware/dh123)
+
+- name: Install docker and other packages
+  hosts: hostservers,tgens,DPUs,Management
   become: yes
   tasks:
     - name: Install usefull packages
@@ -43,9 +69,15 @@
           ansible.builtin.package:
             name: docker-ce,docker-ce-cli,containerd.io,docker-buildx-plugin,docker-compose-plugin
             state: present
+        - name: Debian | Enable docker daemon
+          ansible.builtin.systemd:
+            name: docker
+            state: started
+
+    # TODO: re-enable MEV
 
     - name: Red Hat | Docker
-      when: ansible_os_family == 'RedHat'
+      when: ansible_os_family == 'RedHat' and inventory_hostname != 'mev'
       block:
         - name: Red Hat | Install package dependencies
           ansible.builtin.package:
@@ -61,9 +93,57 @@
             name: podman.socket
             state: started
 
-    # TODO: copy correct telegraf.conf file per host...
+- name: Monitoring
+  # Management server runs it via compose, see below. So skip it here
+  hosts: hostservers,tgens,DPUs
+  become: yes
+  tasks:
 
-    - name: Run telegraf container
+    # TODO: redfish fix IP and credentials for the BMC
+
+    - name: Copy telegraf folder to remote
+      ansible.builtin.copy: src=../telegraf.d dest=/root
+
+    # TODO: create new telegraf container or use same for Marvell card
+
+    # TODO: see if there is an opportunity to consolidate and code dup removal
+
+    - name: Nvidia | telegraf otel monitoring
+      when: inventory_hostname == 'bf2'
+      block:
+        - name: Nvidia | make sure emulation is running for temperature
+          ansible.builtin.systemd:
+            name: set_emu_param
+            state: started
+        - name: Nvidia | Run telegraf container on Nvidia BF
+          community.docker.docker_container:
+            name: telegraf
+            image: docker.io/library/telegraf:1.29
+            state: started
+            restart: true
+            detach: true
+            network_mode: host
+            restart_policy: always
+            mounts:
+              - type: bind
+                source: /root/telegraf.d/telegraf.conf.bf2
+                target: /etc/telegraf/telegraf.conf
+                read_only: true
+              - type: bind
+                source: /run/emu_param
+                target: /run/emu_param
+                read_only: true
+
+    # TODO: copy correct telegraf.conf file per host...
+    #- name: Copy file to host
+    #  ansible.builtin.copy: src=../telegraf.d/telegraf.conf.{{ inventory_hostname }} dest=/root/telegraf.conf.new
+
+    # TODO: re-enable MEV
+
+    - name: Run telegraf container on others
+      when:
+        - inventory_hostname != 'mev'
+        - inventory_hostname != 'bf2'
       community.docker.docker_container:
         name: telegraf
         image: docker.io/library/telegraf:1.29
@@ -74,8 +154,8 @@
         restart_policy: always
         mounts:
           - type: bind
-            source: /root/telegraf.conf
-            target: /etc/telegraf/telegraf.conf
+            source: /root/telegraf.d
+            target: /etc/telegraf/telegraf.d
             read_only: true
 
 - name:
@@ -84,23 +164,8 @@
   tasks:
     - name: Run Monitoring OTEL, Prometheus, Grafana
       community.docker.docker_compose_v2:
-        project_src: /root/opi-poc/lab/otel
+        project_src: /root/opi-poc/lab
       register: output
-
-    - name: Run telegraf container for TOR and 100G arista switch
-      community.docker.docker_container:
-        name: telegraf_arista
-        image: docker.io/library/telegraf:1.29
-        state: started
-        restart: true
-        detach: true
-        network_mode: host
-        restart_policy: always
-        mounts:
-          - type: bind
-            source: /root/telegraf.conf.arista
-            target: /etc/telegraf/telegraf.conf
-            read_only: true
 
 - name:
   hosts: mev
@@ -110,7 +175,6 @@
       ansible.builtin.package:
         name: socat
         state: present
-        sslverify: false
 
     - name: Create socat-otel systemd service file
       template:
@@ -123,3 +187,60 @@
         enabled: yes
         state: started
         daemon_reload: yes
+
+- name:
+  hosts: bf2
+  become: yes
+  tasks:
+    - ansible.builtin.shell: cat /etc/mlnx-release
+      register: result
+    - ansible.builtin.set_fact: bf_version={{ result.stdout | trim }}
+    - ansible.builtin.debug: var=bf_version
+
+- name: Nvidia BlueField installation-update
+  hosts: dh2
+  become: yes
+  vars:
+      bfb_local_file: /root/bf-bundle-2.7.0-33_24.04_ubuntu-22.04_prod.bfb
+      bfb_url: https://content.mellanox.com/BlueField/BFBs/Ubuntu22.04/{{ bfb_local_file | basename }}
+  tasks:
+    - ansible.builtin.shell: lspci | grep BlueField
+    - ansible.builtin.shell: cat /dev/rshim0/misc
+
+    - name: Check if firmware image exists locally {{ bfb_local_file }}
+      ansible.builtin.stat: path={{ bfb_local_file }}
+      register: bfb_local_file_check
+
+    - name: Download firmware image {{ bfb_url }}
+      ansible.builtin.get_url: url={{ bfb_url }} dest={{ bfb_local_file }} mode='0440'
+      when: not bfb_local_file_check.stat.exists
+
+    - ansible.builtin.debug: var=bfb_local_file
+    - ansible.builtin.debug: var=hostvars.bf2.bf_version
+
+    # TODO: ansible.builtin.shell: "bfb-install --bfb {{ local_bfb }} --config /tmp/bf.cfg --rshim {{ rshim.dev }}"
+
+    - name: Flush BFB image and reboot BF card
+      ansible.builtin.shell: cat {{ bfb_local_file }} > /dev/rshim0/boot
+      when: not hostvars.bf2.bf_version in bfb_local_file
+
+# from https://www.kernel.org/doc/html/v5.8/networking/device_drivers/pensando/ionic.html
+- name: Pensando DSC installation-update
+  hosts: dh1
+  become: yes
+  tasks:
+    - ansible.builtin.shell: lspci -d 1dd8:1002
+    - ansible.builtin.shell: lspci | grep Pensando
+    - ansible.builtin.shell: dmesg | grep ionic
+    - ansible.builtin.shell: ls -l  /sys/class/net/*/device
+    - ansible.builtin.shell: ls -l  /sys/class/net/*/device/driver
+    - ansible.builtin.shell: ethtool -i enp25s0np0
+    - ansible.builtin.shell: devlink dev info pci/0000:19:00.0
+
+- name: Marvell CN106 installation-update
+  hosts: dh3
+  become: yes
+  tasks:
+    - ansible.builtin.shell: lspci | grep Cavium
+    - ansible.builtin.shell: lsusb | grep CP2105
+    - ansible.builtin.shell: ls -l  /dev/ttyUSB*

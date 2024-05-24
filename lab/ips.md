@@ -2,6 +2,10 @@
 
 Proposal is to use 172.22.0.0/16 network for all ip addresing in the lab, and have 1 gateway that will handle internet access and be entry point for access in the lab.
 
+## Code duplication
+
+:exclamation: with [ansible inventory](./ansible/inventory)
+
 ## Device types ip allocation
 
 | IR Range            | Purpose                                                     |
@@ -46,6 +50,6 @@ Proposal is to use 172.22.0.0/16 network for all ip addresing in the lab, and ha
 | 172.22.4.4                    |          | Intel DYP imc    |                                  |
 |                               |          |                  |                                  |
 | 172.22.1.100                  |          | Tgen1            |                                  |
-| 172.22.2.100                  |          | Tgen1 bmc        |                                  |
+| 172.22.2.100                  |          | Tgen1 bmc        | <https://172.22.2.100/redfish/v1/> |
 |                               |          |                  |                                  |
 | 172.22.1.250                  |          | Arista 100G      |                                  |
