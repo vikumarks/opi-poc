@@ -2,7 +2,8 @@
 
 - [Goals and Requirments](goals-and-requirements.md)
 - Setup
-  - [LAB IPs allocation](./ips.md)
+  - [Cables/Fibers/transceivers](./cables.md)
+  - [LAB IPs allocation](./ips.md) and [Inventory](./ansible/inventory)
   - [Open Telemetry Observability](./otel.md)
   - [Server Software Setup](server-setup.md)
   - [Bill of Materials](bom.md)
@@ -18,7 +19,6 @@
     - [DH4 - DPU Host 4 - Dell R760](./hardware/dh4/README.md)
     - [A100G - 100G Switch - Arista DCS-7280CR](./hardware/A100G/README.md)
     - [TGEN1 - Traffic Generator 1 - Supermicro](./hardware/tgen1/README.md)
-    - [Cables/Fibers/transceivers](./hardware/cables.md)
 - [Running the Test Cases](running-the-tests.md)
 
 ## Passwords
@@ -27,7 +27,7 @@ We manage all passwords in <https://opi-team.1password.com>
 
 ## Access the LAB
 
-- ask in slack for initial user/password
+- ask in [Opi Slack](https://join.slack.com/t/opi-project/shared_invite/zt-1ctqtrgkz-WJZrcVPp3P1ACZWjpZP2KQ) for initial user/password
 - log into [vpn.opiproject-lab.org](http://vpn.opiproject-lab.org) via web browser and change first time password
 - either allow the browser based Network Access application to be installed and the VPN will be launched
 - or if your company restricts browser-based installs you can:

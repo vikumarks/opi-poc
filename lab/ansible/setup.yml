@@ -14,10 +14,20 @@
   gather_facts: false
   tasks:
     - name: run show version on remote devices
+      #become: yes
       arista.eos.eos_command:
-        commands: show version
+        commands:
+          - show version
+          - show interfaces
+          #- show running-config
 
     # TODO: send lab/hardware/A100G/arista.config to the switch
+    # TODO: send lab/hardware/ToR/arista.config to the switch
+
+    #- name: load config file onto an Arista switch
+    #  arista.eos.eos_config:
+    #    backup: true
+    #    src: ../hardware/{{ inventory_hostname }} /arista.config
 
 - name:
   hosts: hostbmcs
@@ -49,49 +59,29 @@
 
     # TODO: configre BIOS to be always on ( see lab/hardware/dh123)
 
+
+- name: Intel MEV | Enable Proxy and Port Forwarding
+  hosts: mevbmc
+  become: yes
+  gather_facts: false
+  tasks:
+    - ansible.builtin.package: name=socat,squid state=present
+    - ansible.builtin.copy: src=../hardware/dh4/fs/etc/systemd/system/socat-otel.service dest=/etc/systemd/system/socat-otel.service
+    - ansible.builtin.service: name=socat-otel enabled=yes state=started daemon_reload=yes
+    - ansible.builtin.shell: sed -i 's/http_access deny all/http_access allow all/g' /etc/squid/squid.conf
+    - ansible.builtin.service: name=squid enabled=yes state=started
+
 - name: Install docker and other packages
   hosts: hostservers,tgens,DPUs,Management
   become: yes
+  environment:
+    http_proxy:  "{{ 'http://192.168.0.1:3128' if inventory_hostname == 'mev' else '' }}"
+    https_proxy: "{{ 'http://192.168.0.1:3128' if inventory_hostname == 'mev' else '' }}"
   tasks:
-    - name: Install usefull packages
-      ansible.builtin.package:
-        name: python3-pip,sshpass,git
-        state: present
-
-    - name: Debian | Docker
-      when: ansible_os_family == 'Debian'
-      block:
-        - name: Debian | Remove old docker
-          ansible.builtin.package:
-            name: docker.io,docker-doc,docker-compose,docker-compose-v2,podman-docker,containerd,runc
-            state: absent
-        - name: Debian | Install new docker
-          ansible.builtin.package:
-            name: docker-ce,docker-ce-cli,containerd.io,docker-buildx-plugin,docker-compose-plugin
-            state: present
-        - name: Debian | Enable docker daemon
-          ansible.builtin.systemd:
-            name: docker
-            state: started
-
-    # TODO: re-enable MEV
-
-    - name: Red Hat | Docker
-      when: ansible_os_family == 'RedHat' and inventory_hostname != 'mev'
-      block:
-        - name: Red Hat | Install package dependencies
-          ansible.builtin.package:
-            name: podman,podman-docker,podman-plugins
-            state: present
-        # docker-compose >=2 does not work with podman currently
-        - name: Red Hat | Install docker-compose
-          ansible.builtin.pip:
-            name: docker-compose>=1.29,<2
-            state: present
-        - name: Red Hat | Enable podman socket for docker-compose
-          ansible.builtin.systemd:
-            name: podman.socket
-            state: started
+    - ansible.builtin.package: state=present name=python3-pip,sshpass,git
+    - ansible.builtin.package: state=absent  name=docker.io,docker-doc,docker-compose,docker-compose-v2,podman-docker,containerd,runc
+    - ansible.builtin.package: state=present name=docker-ce,docker-ce-cli,containerd.io,docker-buildx-plugin,docker-compose-plugin
+    - ansible.builtin.systemd: state=started name=docker
 
 - name: Monitoring
   # Management server runs it via compose, see below. So skip it here
@@ -112,9 +102,9 @@
       when: inventory_hostname == 'bf2'
       block:
         - name: Nvidia | make sure emulation is running for temperature
-          ansible.builtin.systemd:
-            name: set_emu_param
-            state: started
+          ansible.builtin.systemd: state=started name=set_emu_param
+        - ansible.builtin.systemd: state=stopped name=mlnx_snap
+        - ansible.builtin.systemd: state=started name=spdk_tgt
         - name: Nvidia | Run telegraf container on Nvidia BF
           community.docker.docker_container:
             name: telegraf
@@ -134,11 +124,30 @@
                 target: /run/emu_param
                 read_only: true
 
-    # TODO: copy correct telegraf.conf file per host...
-    #- name: Copy file to host
-    #  ansible.builtin.copy: src=../telegraf.d/telegraf.conf.{{ inventory_hostname }} dest=/root/telegraf.conf.new
+    # TODO: see if there is an opportunity to consolidate and code dup removal
 
-    # TODO: re-enable MEV
+    - name: Intel | telegraf otel monitoring
+      when: inventory_hostname == 'mev'
+      environment:
+        http_proxy: http://192.168.0.1:3128
+        https_proxy: http://192.168.0.1:3128
+      block:
+        - name: Intel | Downgrade requests package due to bug https://github.com/ansible-collections/community.docker/issues/868
+          ansible.builtin.pip: name=requests<2.32
+        - name: Intel | Run telegraf container on Intel MEV
+          community.docker.docker_container:
+            name: telegraf
+            image: docker.io/library/telegraf:1.29
+            state: started
+            restart: true
+            detach: true
+            network_mode: host
+            restart_policy: always
+            mounts:
+              - type: bind
+                source: /root/telegraf.d/telegraf.conf.mev
+                target: /etc/telegraf/telegraf.conf
+                read_only: true
 
     - name: Run telegraf container on others
       when:
@@ -171,22 +180,109 @@
   hosts: mev
   become: yes
   tasks:
-    - name: Install socat
-      ansible.builtin.package:
-        name: socat
-        state: present
+    - name: Fetch Intel Mev ACC running version
+      block:
+        - ansible.builtin.shell: cat /etc/issue
+        - ansible.builtin.shell: cat /etc/issue.net
+          register: result
+        - ansible.builtin.set_fact: acc_run_version={{ result.stdout | trim }}
+        - ansible.builtin.debug: var=acc_run_version
+        - ansible.builtin.fail: msg="Could not find ACC string in the running {{ acc_run_version }}"
+          when: not '"ACC" in acc_run_version'
 
-    - name: Create socat-otel systemd service file
-      template:
-        src: ../hardware/dh4/fs/etc/systemd/system/socat-otel.service
-        dest: /etc/systemd/system/socat-otel.service
+- name:
+  hosts: mevbmc
+  become: yes
+  vars:
+      imc_version: 1.4.0.8469
+      imc_local_file: /root/intel-ipu-pldm-image-{{ imc_version }}.tar.gz
+      imc_remote_file: /work/intel-ipu-pldm-image-{{ imc_version }}/intel-ipu-pldm-{{ imc_version }}.bin
+      acc_version: "{{ imc_version }}"
+      acc_local_file: /root/intel-ipu-acc-eval-image-{{ acc_version }}.tar.gz
+      acc_remote_file: /work/intel-ipu-acc-eval-image-{{ acc_version }}/ACC/OS/acc-os-kernel.bin
+      ansible_remote_tmp: /tmp
+  tasks:
+    - name: Fetch Intel Mev IMC running version
+      block:
+        - ansible.builtin.shell: cat /etc/issue
+        - ansible.builtin.shell: cat /etc/issue.net
+          register: result
+        - ansible.builtin.set_fact: imc_run_version={{ result.stdout | trim }}
+        - ansible.builtin.debug: var=imc_run_version
+        - ansible.builtin.shell: /usr/bin/ipu-update -i
+        - ansible.builtin.debug: var=hostvars.mev.acc_run_version
+        - ansible.builtin.fail: msg="Could not find IMC string in the running {{ imc_run_version }}"
+          when: not '"IMC" in imc_run_version'
 
-    - name: Enable and Start service socat-otel
-      ansible.builtin.service:
-        name: socat-otel
-        enabled: yes
-        state: started
-        daemon_reload: yes
+    - name: Upgrade Intel Mev IMC FW to {{ imc_version }}
+      when: not imc_version in imc_run_version
+      block:
+        - name: Check if firmware image exists remotely {{ imc_remote_file }}
+          ansible.builtin.stat: path={{ imc_remote_file }}
+          register: imc_remote_file_check
+
+        # FW file doesn't exist, copy and unpack it
+
+        - name: Copy and Extract {{ imc_local_file }} into remote /work folder
+          when: not imc_remote_file_check.stat.exists
+          block:
+            - name: Check if firmware image exists locally {{ imc_local_file }}
+              delegate_to: localhost
+              ansible.builtin.stat: path={{ imc_local_file }}
+              register: imc_local_file_check
+
+            - name: Copy and Unpack {{ imc_local_file }} into remote /work folder
+              when: imc_local_file_check.stat.exists
+              ansible.builtin.unarchive: src={{ imc_local_file }} dest=/work
+
+            - name: Check again if firmware image exists remotely {{ imc_remote_file }} after copy and unpack
+              ansible.builtin.stat: path={{ imc_remote_file }}
+              register: imc_remote_file_check
+
+        # FW file exists, use it to start upgrade
+
+        - name: Start upgrade Intel Mev IMC FW using existing {{ imc_remote_file }}
+          when: imc_remote_file_check.stat.exists
+          block:
+            - ansible.builtin.shell: /usr/bin/ipu-update -i {{ imc_remote_file }}
+            # TODO: remove echo below
+            - ansible.builtin.shell: echo /usr/bin/ipu-update -u {{  imc_remote_file }}
+            - ansible.builtin.shell: echo reboot
+
+    # TODO: now update ACC using /usr/bin/imc-scripts/acc_os_partition_provision.sh
+
+    - name: Upgrade Intel Mev ACC FW to {{ acc_version }}
+      when: not acc_version in hostvars.mev.acc_run_version
+      block:
+        - name: Check if firmware image exists remotely {{ acc_remote_file }}
+          ansible.builtin.stat: path={{ acc_remote_file }}
+          register: acc_remote_file_check
+
+        # FW file doesn't exist, copy and unpack it
+
+        - name: Copy and Extract {{ acc_local_file }} into remote /work folder
+          when: not acc_remote_file_check.stat.exists
+          block:
+            - name: Check if firmware image exists locally {{ acc_local_file }}
+              delegate_to: localhost
+              ansible.builtin.stat: path={{ acc_local_file }}
+              register: acc_local_file_check
+
+            - name: Copy and Unpack {{ acc_local_file }} into remote /work folder
+              when: acc_local_file_check.stat.exists
+              ansible.builtin.unarchive: src={{ acc_local_file }} dest=/work
+
+            - name: Check again if firmware image exists remotely {{ acc_remote_file }} after copy and unpack
+              ansible.builtin.stat: path={{ acc_remote_file }}
+              register: acc_remote_file_check
+
+        # FW file exists, use it to start upgrade
+
+        - name: Start upgrade Intel Mev ACC FW using existing {{ acc_remote_file }}
+          when: acc_remote_file_check.stat.exists
+          block:
+            # TODO: remove echo below
+            - ansible.builtin.shell: ls /usr/bin/imc-scripts/acc_os_partition_provision.sh {{ acc_remote_file }}
 
 - name:
   hosts: bf2
