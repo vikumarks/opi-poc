@@ -61,9 +61,23 @@ ip link set enp3s0f1s0.20 master br20
 
 - install Docker (see [Docker manual](https://docs.docker.com/engine/install/ubuntu/) )
 - run required containers
+- Default FRR Conf
+```Shell
+frr version 8.5_git
+frr defaults datacenter
+hostname dut
+no ipv6 forwarding
+service integrated-vtysh-config
+!
+password opi
+enable password opi
+exit
+!
+```
+
 ```Shell
 docker run --privileged --rm --network host \
-     --mount src=/root/opi-evpn-bridge/conf/vino.conf,target=/etc/frr/frr.conf,type=bind \
+     --mount src=/root/opi-evpn-bridge/conf/frr.conf,target=/etc/frr/frr.conf,type=bind \
      --cap-add=NET_ADMIN \
      --cap-add=SYS_ADMIN \
      --cap-add=SYS_MODULE \
