@@ -31,8 +31,7 @@ In most cases, the PoC should
 
 ## LAB
 
-* [Lab hardware planning](lab/goals-and-requirements.md)
-* [LAB current state - Phase 1](lab/README.md)
+Moved to <https://github.com/opiproject/lab>
 
 ## I Want To Contribute
 
