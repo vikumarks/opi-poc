@@ -1,3 +1,6 @@
 google
 google-api-core
 grpcio
+simplejson
+requests_toolbelt
+tabulate
